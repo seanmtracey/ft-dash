@@ -47,6 +47,7 @@ const __dash = (function (){
 		const saveBtn = el.querySelector('.save_config');
 
 		let angleValue = 0;
+		let scaleValue = 1;
 
 		function showConfigurationScreen (){
 			el.setAttribute('data-visible', 'true');
@@ -60,8 +61,14 @@ const __dash = (function (){
 			}
 		}
 
-		function setValue(angle){
+		function setAngle(angle){
+			angleValue = angle | 0;
 			document.body.style.transform = 'rotateX(' + angle + "deg)";
+		}
+
+		function setScale(value){
+			scaleValue = value | 0;
+			headlinesContainer.querySelector('ol').style.transform = "scale(" + value + ")";
 		}
 
 		// bind events
@@ -90,9 +97,11 @@ const __dash = (function (){
 
 			localStorage.setItem('dash-config', JSON.stringify( { angle : angleValue } ) );
 			hideConfigurationScreen(true);
-			setValue(angleValue);
+			setAngle(angleValue);
 
 		}, false);
+
+		let twoStart = 0;
 
 		window.addEventListener('touchstart', function (e){
 
@@ -102,41 +111,96 @@ const __dash = (function (){
 				headlinesContainer.setAttribute('data-visible', 'false');
 			}
 
+			/*if(e.touches.length === 2){
+
+				Array.from(e.touches).forEach(touch => {
+					twoStart += touch.clientY;
+				});
+
+				twoStart = twoStart / e.touches.length;
+
+			}*/
+
+		}, false);
+
+
+		window.addEventListener('touchmove', function (e){
+			// We're going to do the whole zooming thing here
+			if(e.touches.length === 2){
+
+				let twoPosition = 0;
+
+				Array.from(e.touches).forEach(touch => {
+
+					twoPosition += touch.clientY;
+
+				});
+
+				twoPosition = twoPosition / e.touches.length;
+
+				const minValue = 1.5;
+				const maxValue = 0.5;
+				const valueRange = (maxValue - minValue);
+				
+				scaleValue = (twoPosition / window.innerHeight) * valueRange + minValue;
+				headlinesContainer.querySelector('ol').style.transform = "scale(" + scaleValue + ")";
+
+			}
+
+		}, false);
+
+		window.addEventListener('touchend', function (e){
+
+			if(e.touches.length === 0){
+				let storedVariables = JSON.parse(localStorage.getItem('dash-config'));
+				storedVariables.scale = scaleValue;
+
+				localStorage.setItem('dash-config', JSON.stringify(storedVariables));
+
+			}
+
 		}, false);
 
 		return {
 			show : showConfigurationScreen,
 			hide : hideConfigurationScreen,
-			set : setValue
+			setAngle : setAngle,
+			setScale : setScale
 		};
 
 	}());
 
 	function populateWithStories (stories){
 
-		const articlesFrag = document.createDocumentFragment();
-		const storyContainer = document.createElement('ol');
+		return new Promise(function(resolve, reject){
 
-		stories.forEach(story => {
+			const articlesFrag = document.createDocumentFragment();
+			const storyContainer = document.createElement('ol');
 
-			const li = document.createElement('li');
-			const h1 = document.createElement('h1');
-			const p = document.createElement('p');
+			stories.forEach(story => {
 
-			h1.textContent = story.headline;
-			p.textContent = story.subheading;
+				const li = document.createElement('li');
+				const h1 = document.createElement('h1');
+				const p = document.createElement('p');
 
-			li.appendChild(h1);
-			li.appendChild(p);
+				h1.textContent = story.headline;
+				p.textContent = story.subheading;
 
-			storyContainer.appendChild(li);
+				li.appendChild(h1);
+				li.appendChild(p);
+
+				storyContainer.appendChild(li);
+
+			});
+
+			articlesFrag.appendChild(storyContainer);
+
+			headlinesContainer.innerHTML = "";
+			headlinesContainer.appendChild(articlesFrag);
+
+			resolve();
 
 		});
-
-		articlesFrag.appendChild(storyContainer);
-
-		headlinesContainer.innerHTML = "";
-		headlinesContainer.appendChild(articlesFrag);
 
 	}
 
@@ -148,12 +212,15 @@ const __dash = (function (){
 
 		} else {
 			configuration.hide();
-			configuration.set(storedConfiguration.angle)
+			configuration.setAngle(storedConfiguration.angle);
 			headlinesContainer.setAttribute('data-visible', 'true');
 		}
 	
 		getTopStories(0, 3)
-			.then(stories => populateWithStories(stories))
+			.then(stories => populateWithStories(stories)).
+			then(function(){
+				configuration.setScale(storedConfiguration.scale);
+			});
 		;
 		
 	}
