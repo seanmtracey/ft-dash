@@ -9,10 +9,10 @@ This prototype is based on the code from Big FT.
 
 To run FT Dash
 
-1) Clone this repo
-2) run ```npm i``` inside the directory to install the app dependancies (There are quite a few, the Big FT dependencies have yet to be stripped)
-3) ```npm run build:app```
-4) ```npm start```
+1. Clone this repo
+2. run ```npm i``` inside the directory to install the app dependancies (There are quite a few, the Big FT dependencies have yet to be stripped)
+3. ```npm run build:app```
+4. ```npm start```
 
 You will now be able to access FT Dash from localhost:3000
 
